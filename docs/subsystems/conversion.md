@@ -9,61 +9,53 @@ administrators to follow.
 
 ## Overview
 
-Zulip offers an export tool, `management/export.py`, which works well
-to export the data for a single Zulip realm, and which is your best
-choice if you're migrating a Zulip realm to a new server.
+Zulip includes an export tool, `management/export.py`, which
+exports data for a single Zulip realm. `management/export.py`
+is beneficial when migrating a Zulip realm to a new server.
 
-This document supplements the explanation in `management/export.py`,
-but here we focus more on the logistics of a big conversion of a
-multi-realm Zulip installation. (For some historical perspective, this
-document was originally begun as part of a big Zulip cut-over in
-summer 2016.)
+This document cover the logistics a big conversion of a
+multi-realm Zulip installation, supplementing the explanation in
+`management/export.py`.
 
-There are many major operational aspects to doing a conversion. I will
-list them here, noting that several are not within the scope of this
-document:
+There are many major operational aspects to doing a conversion,
+including:
 
-- Get new servers running.
-- Export data from the old DB.
-- Export files from Amazon S3.
-- Import files into new storage.
-- Import data into new DB.
-- Restart new servers.
-- Decommission old server.
+- Get new servers running
+- Export data from the old DB
+- Export files from Amazon S3
+- Import files into new storage
+- Import data into new DB
+- Restart new servers
+- Decommission old server
 
-This document focuses almost entirely on the **export** piece.  Issues
-with getting Zulip itself running are out of scope here; see [the
-production installation instructions](../index.html#zulip-in-production).
-As for the import side of things, we only touch on it implicitly.  (My
-reasoning was that we *had* to get the export piece right in a timely
-fashion, even if it meant we would have to sort out some straggling
-issues on the import side later.)
+This document focuses on **exporting** data from the old DB and
+Amazon S3.  For informatoin on installing or running Zulip see
+[Zulip installation instructions](../index.html#zulip-in-production).
 
 ## Exporting multiple realms' data when moving to a new server
 
-The main exporting tools in place as of summer 2016 are below:
+As of summer 2016, Zulip can:
+- Export single realms (but not yet limit users within the
+  realm)
+- Export single users (but doesn't get realm-wide data in
+  the process)
+- Run exports simultaneously (but have to navigate a bunch of
+  /tmp directories)
 
-- We can export single realms (but not yet limit users within the
-  realm).
-- We can export single users (but then we get no realm-wide data in
-  the process).
-- We can run exports simultaneously (but have to navigate a bunch of
-  /tmp directories).
+In the future, it may be useful for Zulip to:
+- Export multiple realms simultaneously
+- Export multiple single users simultaneously
+- Limit users within realm exports
+- Introduce more operational robustness/convenience
+  while doing several exports simultaneously
+- Merge multiple export files to remove duplicates
 
-Things that we still may need:
-- We may want to export multiple realms simultaneously.
-- We may want to export multiple single users simultaneously.
-- We may want to limit users within realm exports.
-- We may want more operational robustness/convenience while doing
-  several exports simultaneously.
-- We may want to merge multiple export files to remove duplicates.
-
-We have a few major classes of data.  They are listed below in the order
-that we process them in `do_export_realm()`:
+Zulip has a few major classes of data.  They are listed below in
+the order that Zulip processes them in `do_export_realm()`:
 
 #### Public Realm Data
 
-`Realm/RealmDomain/RealmEmoji/RealmFilter/DefaultStream`.
+`Realm/RealmDomain/RealmEmoji/RealmFilter/DefaultStream`
 
 #### Cross Realm Data
 
@@ -77,11 +69,11 @@ users in a bottom-up fashion though other tables).
 
 #### Disjoint User Data
 
-`UserProfile/UserActivity/UserActivityInterval/UserPresence`.
+`UserProfile/UserActivity/UserActivityInterval/UserPresence`
 
 #### Recipient Data
 
-`Recipient/Stream/Subscription/Huddle`.
+`Recipient/Stream/Subscription/Huddle`
 
 These tables are tied back to users, but they introduce complications
 when you try to deal with multi-user subsets.
